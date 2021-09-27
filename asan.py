@@ -1,10 +1,15 @@
 import os
 import sys
 import re
+import hashlib
 
 S0="-"
 S1="-"
 S2="-"
+S3="-"
+S4="-"
+PC="-"
+HASH="-"
 SDEPTH="-"
 SUMMARY="-"
 ERROR=""
@@ -40,8 +45,8 @@ def SimpleError(filename) :
 
 def Do(filename, Silent = True) :
 
-    global S0,S1,S2,SDEPTH
-    global SUMMARY, ERROR
+    global S0,S1,S2,S3,S4,SDEPTH
+    global SUMMARY, ERROR, PC
 
     fp = open(filename,'r')
     whole = fp.read()
@@ -49,7 +54,9 @@ def Do(filename, Silent = True) :
     sumMsg = re.findall("SUMMARY: AddressSanitizer:.*\(", whole)
     if len(sumMsg) == 0 :
         if not Silent : print( "\n[!] Warning : %s have no ASAN summary..." % filename, end="")
-        return False
+        Leaker = re.findall("LeakSanitizer.*\n")
+        if len(Leaker) == 0 : return False
+        else : SUMMARY = Leaker[0].strip()
     
     errMsg = re.findall("ERROR: AddressSanitizer: .*\n", whole)
     if len(errMsg) == 0 :
@@ -58,7 +65,15 @@ def Do(filename, Silent = True) :
     stack0Msg = re.findall("#0 [\S]* in [\S]* \(", whole)
     stack1Msg = re.findall("#1 [\S]* in [\S]* \(", whole)
     stack2Msg = re.findall("#2 [\S]* in [\S]* \(", whole)
+    stack3Msg = re.findall("#3 [\S]* in [\S]* \(", whole)
+    stack4Msg = re.findall("#4 [\S]* in [\S]* \(", whole)
     stackDMsg = re.findall("#[0-9]* [\S]* in", whole)
+    PCMsg = re.findall("\(pc 0x[\S]*", whole)
+
+    if len(PCMsg) > 0 :
+        L1 = PCMsg[0].strip()
+        L2 = L1.split(" ")
+        PC = L2[1]
 
     if len(stack0Msg) == 0 :
         if not Silent : print("\n[!] Warning : %s have no stacktrace #0" %filename, end="")
@@ -83,6 +98,22 @@ def Do(filename, Silent = True) :
         if len(L1) > 3 :
             L2 = L1[3]
             if S2 == "-" : S2 = L2
+
+    if len(stack3Msg) == 0 :
+        if not Silent : print("\n[!] Warning : %s have no stacktrace #2" %filename, end="")
+    else :
+        L1 = stack3Msg[0].split(" ")
+        if len(L1) > 3 :
+            L2 = L1[3]
+            if S3 == "-" : S3 = L2
+
+    if len(stack4Msg) == 0 :
+        if not Silent : print("\n[!] Warning : %s have no stacktrace #2" %filename, end="")
+    else :
+        L1 = stack4Msg[0].split(" ")
+        if len(L1) > 3 :
+            L2 = L1[3]
+            if S4 == "-" : S4 = L2
 
     if len(stackDMsg) > 0 :
         try:
@@ -129,10 +160,22 @@ else :
 
 fp = open("out.csv", "at")
 
+if len(SUMMARY) > 2 :
+    if len(S0) > 2:
+        if len(PC) > 2 :
+            enc = hashlib.md5()
+            enc.update(SUMMARY.encode())
+            enc.update(PC.encode())
+            enc.update(S0.encode())
+            enc.update(S1.encode())
+            enc.update(S2.encode())
+            enc.update(S3.encode())
+            enc.update(S4.encode())
+            HASH = enc.hexdigest()
 
 csvline =  '"%s","%s","%s","",' % (sys.argv[2],prefix, number)
 csvline += '"%s","%s","",' % (TRIPLE,SUMMARY + ERROR)
-csvline += '"%s","%s","%s","%s"\n' % (SDEPTH, S0, S1, S2)
+csvline += '"%s","%s","%s","%s","%s","%s","%s","%s"\n' % (HASH,PC,SDEPTH, S0, S1, S2, S3, S4)
 
 fp.write(csvline)
 
