@@ -162,16 +162,15 @@ fp = open("out.csv", "at")
 
 if len(SUMMARY) > 2 :
     if len(S0) > 2:
-        if len(PC) > 2 :
-            enc = hashlib.md5()
-            enc.update(SUMMARY.encode())
-            enc.update(PC.encode())
-            enc.update(S0.encode())
-            enc.update(S1.encode())
-            enc.update(S2.encode())
-            enc.update(S3.encode())
-            enc.update(S4.encode())
-            HASH = enc.hexdigest()
+        enc = hashlib.md5()
+        enc.update(SUMMARY.encode())
+        enc.update(PC.encode())
+        enc.update(S0.encode())
+        enc.update(S1.encode())
+        enc.update(S2.encode())
+        enc.update(S3.encode())
+        enc.update(S4.encode())
+        HASH = enc.hexdigest()
 
 csvline =  '"%s","%s","%s","",' % (sys.argv[2],prefix, number)
 csvline += '"%s","%s","",' % (TRIPLE,SUMMARY + ERROR)
