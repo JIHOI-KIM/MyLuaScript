@@ -54,7 +54,7 @@ def Do(filename, Silent = True) :
     sumMsg = re.findall("SUMMARY: AddressSanitizer:.*\(", whole)
     if len(sumMsg) == 0 :
         if not Silent : print( "\n[!] Warning : %s have no ASAN summary..." % filename, end="")
-        Leaker = re.findall("LeakSanitizer.*\n")
+        Leaker = re.findall("LeakSanitizer.*\n", whole)
         if len(Leaker) == 0 : return False
         else : SUMMARY = Leaker[0].strip()
     
