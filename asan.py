@@ -129,13 +129,21 @@ def Do(filename, Silent = True) :
         
 
     L1 = sumMsg[0].split(" ")
-    if len(L1) > 2 : SUMMARY = L1[-2]
-
-    if SUMMARY == "SEGV" :
+    ERR_TYPE = "-"
+    if len(L1) > 2 : ERR_TYPE = L1[2]
+    if ERR_TYPE == "SEGV" :
+        SUMMARY = "SEGV"
         L1 = re.findall("0x[0-9]*",errMsg[0])
         if len(L1) > 0 :
             ERROR =  " (%s)" % L1[0]
-
+    else :
+        L1 = re.findall("AddressSanitizer:.*\(",sumMsg[0])
+        if len(L1) > 0 :
+            L2 = L1[0].split("AddressSanitizer:")
+            if len(L2) > 1 :
+                L3 = L2[1].strip()[:-1]
+                SUMMARY = L3
+            
     fp.close()
     return True
     
@@ -162,9 +170,7 @@ fp = open("out.csv", "at")
 
 if len(SUMMARY) > 2 :
     if len(S0) > 2:
-        if len(PC) > 2 :
             enc = hashlib.md5()
-            enc.update(SUMMARY.encode())
             enc.update(PC.encode())
             enc.update(S0.encode())
             enc.update(S1.encode())
